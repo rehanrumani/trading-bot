@@ -69,21 +69,22 @@ def receive_trading_signal():
         
         # Process signal
         if signal_data['signal'] == 'BUY':
-            result = trader.execute_buy_signal(signal_data)
+            result = trader.execute_trade(signal_data)
             
-            if result['success']:
+            if result.get('status') == 'success':
                 logger.info(f"Successfully executed BUY for {signal_data['pair']}")
                 return jsonify({
                     "status": "success",
-                    "message": "Trade executed successfully",
-                    "trade_id": result.get('trade_id'),
+                    "message": result.get('message', 'Trade executed successfully'),
+                    "trade_id": result.get('data', {}).get('trade_id'),
                     "timestamp": datetime.now().isoformat()
                 })
             else:
-                logger.error(f"Failed to execute trade: {result['error']}")
+                error_msg = result.get('message', 'Unknown error')
+                logger.error(f"Failed to execute trade: {error_msg}")
                 return jsonify({
                     "status": "error",
-                    "message": result['error'],
+                    "message": error_msg,
                     "timestamp": datetime.now().isoformat()
                 }), 500
         

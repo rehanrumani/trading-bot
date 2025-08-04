@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: crypto-trading-executor
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: THREE_COMMAS_API_KEY
+        sync: false
+      - key: THREE_COMMAS_SECRET
+        sync: false
+      - key: ACCOUNT_ID
+        sync: false

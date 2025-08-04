@@ -25,40 +25,56 @@ class ThreeCommasTrader:
         if not all([self.api_key, self.api_secret, self.account_id]):
             logger.error("Missing 3Commas API credentials in environment variables")
     
-    def _generate_signature(self, query_string: str) -> str:
+    def _generate_signature(self, method: str, path: str, query_string: str = "", body: str = "") -> str:
         """Generate HMAC SHA256 signature for 3Commas API"""
         if not self.api_secret:
             raise ValueError("API secret not configured")
-        return hmac.new(
+        
+        # Correct 3Commas signature format: method + path + body + query_string
+        signature_base = method.upper() + path + body + query_string
+        
+        signature = hmac.new(
             self.api_secret.encode('utf-8'),
-            query_string.encode('utf-8'),
+            signature_base.encode('utf-8'),
             hashlib.sha256
         ).hexdigest()
+        
+        logger.debug(f"Signature base: {signature_base}")
+        return signature
     
     def _make_request(self, method: str, endpoint: str, params: Optional[dict] = None) -> Optional[Dict]:
         """Make authenticated request to 3Commas API"""
         try:
             url = f"{self.base_url}{endpoint}"
             
-            # Prepare query string
-            if params:
-                query_string = urllib.parse.urlencode(params)
-            else:
-                query_string = ""
-            
-            # Generate signature
-            signature = self._generate_signature(query_string)
-            
-            headers = {
-                'APIKEY': self.api_key,
-                'Signature': signature,
-                'Content-Type': 'application/json'
-            }
-            
             if method.upper() == 'GET':
+                query_string = ""
+                if params:
+                    query_string = urllib.parse.urlencode(params, safe='')
+                
+                signature = self._generate_signature('GET', endpoint, query_string)
+                headers = {
+                    'APIKEY': self.api_key,
+                    'Signature': signature
+                }
                 response = requests.get(url, params=params, headers=headers, timeout=30)
+            
             elif method.upper() == 'POST':
-                response = requests.post(url, json=params, headers=headers, timeout=30)
+                body = ""
+                if params:
+                    body = json.dumps(params, separators=(',', ':'))
+                
+                signature = self._generate_signature('POST', endpoint, "", body)
+                headers = {
+                    'APIKEY': self.api_key,
+                    'Signature': signature,
+                    'Content-Type': 'application/json'
+                }
+                
+                if params:
+                    response = requests.post(url, data=body, headers=headers, timeout=30)
+                else:
+                    response = requests.post(url, headers=headers, timeout=30)
             else:
                 logger.error(f"Unsupported HTTP method: {method}")
                 return None

@@ -56,7 +56,7 @@ class ThreeCommasTrader:
     def _make_request(self, method: str, endpoint: str, params: Optional[dict] = None) -> Optional[Dict]:
         """Make authenticated request to 3Commas API v2"""
         try:
-            path = f"/public/api/v2{endpoint}"
+            path = f"/v2{endpoint}"
             url = f"{self.base_url}{path}"
             
             # Generate signature with timestamp
@@ -165,7 +165,7 @@ class ThreeCommasTrader:
                 "note": f"AI Generated Signal - Confidence: {signal_data.get('confidence', 0):.2f}"
             }
             
-            endpoint = "/public/api/v2/smart_trades"
+            endpoint = "/smart_trades"
             result = self._make_request('POST', endpoint, smart_trade_params)
             
             if result:
@@ -283,7 +283,7 @@ class ThreeCommasTrader:
         """Get recent trade history"""
         try:
             # Get SmartTrades
-            endpoint = "/public/api/v2/smart_trades"
+            endpoint = "/smart_trades"
             params = {"account_id": self.account_id, "limit": limit}
             smart_trades = self._make_request('GET', endpoint, params)
             
